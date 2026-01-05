@@ -1,0 +1,95 @@
+# Install OPEN WEBUI as a stack component
+
+For CPU Ollama:
+```
+cd helm/
+helm upgrade --install open-webui . --namespace hyperplane-open-webui --create-namespace
+```
+
+To specify an external Ollama connection, you may configure it in the dashboard after deploying, or use it by default by adding to the end of helm upgrade command:
+```--set ollama.externalHost=<OLLAMA_URL>```
+i.e. --set ollama.externalHost=http://ollama.hyperplane-ollama.svc.cluster.local:11434
+
+TODO: GPU support is still under construction
+or for GPU enabled
+```
+cd helm/
+helm upgrade --install open-webui . --namespace hyperplane-open-webui --create-namespace --set ollama.resources.limits.nvidia.com/gpu="1"
+```
+
+Please allow up to 5 minutes for the stack component to spin up.
+
+## Adding the license body
+
+Follow instructions [here](../0-licenses/README) or instructions on how to add the license `body` in the GraphQL mutation below
+
+
+## GraphQL
+```
+mutation {
+  createOnePlatformApp(
+  data: {
+    platformAppLicense: {
+      create: {
+        type: "MIT License"
+        url: "https://raw.githubusercontent.com/open-webui/open-webui/main/LICENSE"
+        body: "" # Visit ../0-license/README for instructions on how to add the license
+      }
+    }
+    enabled: true
+    installStatus: ACTIVE
+    namespace: "hyperplane-open-webui" ## change this for multiple installations
+    componentLabel: ""
+    name: "Open WebUI" ## change this for multiple installations
+    appUrl: "https://open-webui.<DOMAIN>/" ## change this for your <DOMAIN>/
+    platformAppCategoryName: "Language Models"
+    imageBackgroundColor: "#fff"
+    imageUrl: "https://github.com/devsentient/cdn/assets/155983994/bd815711-50fc-45aa-8ca6-c42bc6aed8e6"
+    usageDocs:"# OpenWebUI In-Cluster API Guide\n\nThis guide explains how to interact with the OpenWebUI API when it's running in our Kubernetes cluster.\n\n## Base URL\nThe OpenWebUI service is accessible within the cluster at:\n```\nhttp://open-webui.hyperplane-open-webui.svc.cluster.local:80\n```\n\n## Authentication\nOpenWebUI uses a custom authentication header. You must include your JWT token in all API requests:\n\n```bash\n# Header format\nx-custom-auth: Bearer <your-jwt-token>\n```\n\nExample:\n```bash\ncurl -H 'x-custom-auth: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \\\n     -H 'Content-Type: application/json' \\\n     -H 'Accept: application/json' \\\n     \"http://open-webui.hyperplane-open-webui.svc.cluster.local:80/api/models\"\n```\n\n## Common API Endpoints\n\n### List Available Models\nGet a list of all available models:\n\n```bash\nGET /api/models\n\n# Example curl command\ncurl -H 'x-custom-auth: Bearer <your-jwt-token>' \\\n     -H 'Content-Type: application/json' \\\n     -H 'Accept: application/json' \\\n     \"http://open-webui.hyperplane-open-webui.svc.cluster.local:80/api/models\"\n```\n\nResponse format:\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"model-id\",\n      \"name\": \"model-name\",\n      \"object\": \"model\",\n      \"created\": 1234567890,\n      \"owned_by\": \"openai\",\n      \"pipe\": {\n        \"type\": \"pipe\"\n      },\n      \"actions\": []\n    },\n    ...\n  ]\n}\n```\n\n## Querying Models\n\n### Chat Completions\nGenerate responses using the chat completions endpoint:\n\n```bash\nPOST /api/chat/completions\n\n# Example 1: Basic facts query with Anthropic Claude (via Amazon Bedrock)\ncurl -X POST \\\n     -H 'x-custom-auth: Bearer <your-jwt-token>' \\\n     -H 'Content-Type: application/json' \\\n     -H 'Accept: application/json' \\\n     -d '{\n       \"model\": \"anthropic/claude-3.5-sonnet\",\n       \"messages\": [\n         {\"role\": \"system\", \"content\": \"You are Claude, a helpful AI assistant.\"},\n         {\"role\": \"user\", \"content\": \"What are three interesting facts about kangaroos?\"}\n       ],\n       \"temperature\": 0.7,\n       \"max_tokens\": 1000\n     }' \\\n     \"http://open-webui.hyperplane-open-webui.svc.cluster.local:80/api/chat/completions\"\n\n# Example response:\n{\n  \"id\": \"gen-1739377082-hyrSSUjR29oc26BknWqk\",\n  \"provider\": \"Amazon Bedrock\",\n  \"model\": \"anthropic/claude-3.5-sonnet\",\n  \"object\": \"chat.completion\",\n  \"choices\": [{\n    \"message\": {\n      \"role\": \"assistant\",\n      \"content\": \"Here are three interesting facts about kangaroos:\\n\\n1. Female kangaroos have three vaginas... [content shortened]\"\n    }\n  }],\n  \"usage\": {\n    \"prompt_tokens\": 26,\n    \"completion_tokens\": 212,\n    \"total_tokens\": 238\n  }\n}\n\n# Example 2: Technical analysis with lower temperature (via Google)\ncurl -X POST \\\n     -H 'x-custom-auth: Bearer <your-jwt-token>' \\\n     -H 'Content-Type: application/json' \\\n     -H 'Accept: application/json' \\\n     -d '{\n       \"model\": \"anthropic/claude-3.5-sonnet\",\n       \"messages\": [\n         {\"role\": \"system\", \"content\": \"You are Claude, a helpful AI assistant.\"},\n         {\"role\": \"user\", \"content\": \"Compare and contrast quantum computing with classical computing in 3-4 sentences.\"}\n       ],\n       \"temperature\": 0.3\n     }' \\\n     \"http://open-webui.hyperplane-open-webui.svc.cluster.local:80/api/chat/completions\"\n\n# Example response:\n{\n  \"id\": \"gen-1739377097-WkRtJkRG5GRBI71VIfOM\",\n  \"provider\": \"Google\",\n  \"model\": \"anthropic/claude-3.5-sonnet\",\n  \"object\": \"chat.completion\",\n  \"choices\": [{\n    \"message\": {\n      \"role\": \"assistant\",\n      \"content\": \"Classical computing relies on bits that exist in binary states... [content shortened]\"\n    }\n  }],\n  \"usage\": {\n    \"prompt_tokens\": 32,\n    \"completion_tokens\": 113,\n    \"total_tokens\": 145\n  }\n}\n\nNote: The same model may be served through different providers (Amazon Bedrock, Google) depending on availability and routing.\n```\n\n### Model-Specific Parameters\n\nDifferent models support different parameters:\n\n1. Standard Models (like Claude):\n   ```json\n   {\n     \"model\": \"anthropic/claude-3.5-sonnet\",\n     \"messages\": [...],\n     \"temperature\": 0.7,\n     \"max_tokens\": 1000\n   }\n   ```\n\n2. Special Purpose Models (like bdr-co-pilot):\n   ```json\n   {\n     \"model\": \"bdr-co-pilot\",\n     \"messages\": [...]\n     // Note: temperature and other parameters not supported\n   }\n   ```\n\nExample with bdr-co-pilot:\n```bash\ncurl -X POST \\\n     -H 'x-custom-auth: Bearer <your-jwt-token>' \\\n     -H 'Content-Type: application/json' \\\n     -H 'Accept: application/json' \\\n     -d '{\n       \"model\": \"bdr-co-pilot\",\n       \"messages\": [\n         {\"role\": \"user\", \"content\": \"prospect says they'\\''re using databricks\"}\n       ]\n     }' \\\n     \"http://open-webui.hyperplane-open-webui.svc.cluster.local:80/api/chat/completions\"\n```\n\nExample response:\n```json\n{\n  \"id\": \"chatcmpl-B09ufWslgKcxfXyp6n0HfJmbZe2FC\",\n  \"object\": \"chat.completion\",\n  \"model\": \"o3-mini-2025-01-31\",\n  \"choices\": [{\n    \"message\": {\n      \"role\": \"assistant\",\n      \"content\": \"That's great you're leveraging Databricks—Shakudo can seamlessly integrate with your current setup...\"\n    },\n    \"finish_reason\": \"stop\"\n  }],\n  \"usage\": {\n    \"prompt_tokens\": 487,\n    \"completion_tokens\": 377,\n    \"total_tokens\": 864\n  }\n}\n```\n\n### Advanced Chat Parameters\n\nYou can customize the model's behavior using these parameters:\n\n```json\n{\n  \"model\": \"YOUR_MODEL_ID\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n    {\"role\": \"user\", \"content\": \"Hello!\"}\n  ],\n  \"temperature\": 0.7,        // Controls randomness (0.0 to 2.0)\n  \"top_p\": 0.95,            // Nucleus sampling parameter\n  \"n\": 1,                   // Number of completions to generate\n  \"stream\": false,          // Whether to stream responses\n  \"max_tokens\": 2000,       // Maximum tokens in the response\n  \"presence_penalty\": 0.0,  // Penalize new tokens based on presence in text\n  \"frequency_penalty\": 0.0  // Penalize new tokens based on frequency in text\n}\n```\n\nExample with advanced parameters:\n\n```bash\n# Example curl command with advanced parameters\ncurl -X POST \\\n     -H 'x-custom-auth: Bearer <your-jwt-token>' \\\n     -H 'Content-Type: application/json' \\\n     -H 'Accept: application/json' \\\n     -d '{\n       \"model\": \"YOUR_MODEL_ID\",\n       \"messages\": [\n         {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n         {\"role\": \"user\", \"content\": \"Write a creative story about a space adventure.\"}\n       ],\n       \"temperature\": 0.8,\n       \"max_tokens\": 1000,\n       \"top_p\": 0.95,\n       \"frequency_penalty\": 0.5\n     }' \\\n     \"http://open-webui.hyperplane-open-webui.svc.cluster.local:80/api/chat/completions\"\n```\n\n### Streaming Responses\n\nTo receive responses in a stream (useful for real-time applications):\n\n```bash\n# Example streaming request\ncurl -X POST \\\n     -H 'x-custom-auth: Bearer <your-jwt-token>' \\\n     -H 'Content-Type: application/json' \\\n     -H 'Accept: application/json' \\\n     -d '{\n       \"model\": \"YOUR_MODEL_ID\",\n       \"messages\": [\n         {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n         {\"role\": \"user\", \"content\": \"Tell me a story.\"}\n       ],\n       \"stream\": true\n     }' \\\n     \"http://open-webui.hyperplane-open-webui.svc.cluster.local:80/api/chat/completions\"\n```\n\n### Conversation Context\n\nYou can maintain conversation context by including previous messages:\n\n```json\n{\n  \"model\": \"YOUR_MODEL_ID\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n    {\"role\": \"user\", \"content\": \"Hi, I'd like to learn about quantum computing.\"},\n    {\"role\": \"assistant\", \"content\": \"I'd be happy to help you learn about quantum computing. What specific aspect would you like to know about?\"},\n    {\"role\": \"user\", \"content\": \"What are qubits?\"}\n  ]\n}\n```\n\n### Function Calling (For Supported Models)\n\nSome models support function calling capabilities:\n\n```json\n{\n  \"model\": \"YOUR_MODEL_ID\",\n  \"messages\": [\n    {\"role\": \"user\", \"content\": \"What's the weather like in New York?\"}\n  ],\n  \"functions\": [\n    {\n      \"name\": \"get_weather\",\n      \"description\": \"Get the current weather in a location\",\n      \"parameters\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"location\": {\n            \"type\": \"string\",\n            \"description\": \"The city and state, e.g. San Francisco, CA\"\n          }\n        },\n        \"required\": [\"location\"]\n      }\n    }\n  ],\n  \"function_call\": \"auto\"\n}\n```\n\n### Common Headers\nInclude these headers with all requests:\n```bash\nx-custom-auth: Bearer <your-jwt-token>\nContent-Type: application/json\nAccept: application/json\n```\n\n## Providers and Model Availability\n\nThe OpenWebUI service can route requests to different providers based on availability and configuration:\n\n1. Amazon Bedrock\n   - Provides access to models like Claude\n   - May have different token pricing\n   - Generally good for production workloads\n\n2. Google\n   - Alternative provider for various models\n   - May offer different performance characteristics\n   - Can serve as a fallback option\n\nThe same model (e.g., anthropic/claude-3.5-sonnet) might be served through different providers in different requests. Your code should be prepared to handle responses from any provider.\n\nExample provider response fields:\n```json\n{\n  \"provider\": \"Amazon Bedrock\",  // or \"Google\", etc.\n  \"model\": \"anthropic/claude-3.5-sonnet\",\n  // ... rest of response\n}\n```\n\n## Important Notes\n\n1. JWT Token Authentication\n   - Use the x-custom-auth header instead of the standard Authorization header\n   - Always include the \"Bearer \" prefix with your JWT token\n   - Tokens may expire and need to be refreshed\n\n2. Response Handling\n   - Always check for 401 Unauthorized responses which indicate authentication issues\n   - Large responses (like model lists) may need pagination or parsing\n   - For streaming responses, handle the data chunks appropriately\n   - Consider using jq for JSON parsing when working with responses:\n     ```bash\n     curl ... | jq .\n     ```\n\n3. Best Practices\n   - Store long-running tokens securely\n   - Consider adding error handling in scripts\n   - Add timeouts to curl requests for better reliability\n   - Use appropriate content-type headers based on the endpoint\n   - Start with lower temperature values (0.3-0.7) for more focused responses\n   - Adjust max_tokens based on your needs to control response length\n\n4. Common Issues\n   - If you get 401 Unauthorized, check if your JWT token is valid or expired\n   - Large responses may need to be processed in chunks\n   - Some endpoints may have rate limits\n   - Streaming responses require proper handling of SSE (Server-Sent Events)\n\n## Example Scripts\n\n### Basic API Test Script\n```bash\n#!/bin/bash\n\nJWT_TOKEN=\"your-jwt-token\"\nBASE_URL=\"http://open-webui.hyperplane-open-webui.svc.cluster.local:80\"\n\n# Test API connection by listing models\ncurl -s -H \"x-custom-auth: Bearer $JWT_TOKEN\" \\\n     -H \"Content-Type: application/json\" \\\n     -H \"Accept: application/json\" \\\n     \"$BASE_URL/api/models\" | jq .\n\n# Check for successful response\nif [ $? -eq 0 ]; then\n    echo \"Successfully connected to OpenWebUI API\"\nelse\n    echo \"Failed to connect to OpenWebUI API\"\n    exit 1\nfi\n```\n\n### Simple Chat Script\n```bash\n#!/bin/bash\n\nJWT_TOKEN=\"your-jwt-token\"\nBASE_URL=\"http://open-webui.hyperplane-open-webui.svc.cluster.local:80\"\nMODEL_ID=\"your-model-id\"\n\n# Send a chat completion request\ncurl -s -X POST \\\n     -H \"x-custom-auth: Bearer $JWT_TOKEN\" \\\n     -H \"Content-Type: application/json\" \\\n     -H \"Accept: application/json\" \\\n     -d \"{\n       \\\"model\\\": \\\"$MODEL_ID\\\",\n       \\\"messages\\\": [\n         {\\\"role\\\": \\\"system\\\", \\\"content\\\": \\\"You are a helpful assistant.\\\"},\n         {\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"Hello, how are you?\\\"}\n       ],\n       \\\"temperature\\\": 0.7,\n       \\\"max_tokens\\\": 150\n     }\" \\\n     \"$BASE_URL/api/chat/completions\" | jq .\n```\n" 
+  }) {
+    id
+  }
+}
+```
+
+## Keycloak whitelist URL
+whitelist your <DOMAIN>/ and <DOMAIN>/*
+```graphql
+mutation {
+  updateRedirectUrls(
+    operation: ADD
+    urls: [ "https://open-webui.<DOMAIN>", 
+            "https://open-webui.<DOMAIN>/*"]
+  )
+}
+
+```
+
+## Dashboard
+dashboard at https://open-webui.<DOMAIN>/, e.g. https://open-webui.dev-aks.canopyhub.io
+
+## Basic Usage
+The [Open WebUI Docs](https://docs.openwebui.com/) provide some tutorials and basic usage of the UI.
+
+To add an Ollama model, click the settings cog, select Models, and enter the desired model to download in the "Pull a model from Ollama.com" section. List of available models are [here](https://ollama.com/library).
+
+## Configuration
+
+### On Premise clusters
+
+If Shakudo is deployed to on premises cluster with self signed certificates open webui must be directly porvided with that certifiacte. Application has to trust to certitifacate othervise it will fail with ssl validation. To make it working helm chart has `onPrem.enabled` key. Byt default it is set to false. When enabled it will copy `onPrem.tlsNamespace`.`onPrem.tlsSecret` into openwebui's namespace. Make sure that file is called tls.crt in `onPrem.tlsNamespace`.`onPrem.tlsSecret`
+The config looks like:
+```
+onPrem:
+  enabled: false
+  tlsSecret: ingressgateway-wc-certs
+  tlsNamespace: rp-istio-system
+```
+
+### Keycloak protocol
+There is option to choose communication protocol with keycloak `https` or `http`
+
+```
+keycloak:
+  protocol: <https | http>
+```

@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: restore-auth-header
+  namespace: {{ .Release.Namespace }}
+spec:
+  workloadSelector:
+    labels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.lua
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+            inlineCode: |
+              function envoy_on_request(request_handle)
+                local auth_header = request_handle:headers():get("x-custom-auth")
+                if auth_header then
+                  request_handle:headers():replace("authorization", auth_header)
+                else
+                  -- If x-custom-auth is null or not present, remove the authorization header
+                  request_handle:headers():remove("authorization")
+                end
+              end

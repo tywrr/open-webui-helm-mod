@@ -1,0 +1,41 @@
+{{- $configmapObject := (lookup "v1" "ConfigMap" "hyperplane-core" "hyperplane-settings") | default dict }}
+{{- $cmData := (get $configmapObject "data") | default dict }}
+{{- $domainName := (get $cmData "HYPERPLANE_DOMAIN") }}
+{{- $istioGateway := (get $cmData "ISTIO_GATEWAY") }}
+
+
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Release.Name }}-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}
+    release: "{{ .Release.Name }}"
+    hyperplane.dev/stack-component: {{ .Release.Name }}
+    hyperplane-service-name: {{ include "open-webui.name" . }}
+spec:
+  gateways:
+  - {{ $istioGateway }}
+  hosts:
+  - {{ .Release.Name }}.{{ $domainName }}
+  http:
+  - corsPolicy:
+      allowCredentials: true
+      allowMethods:
+      - POST
+      - GET
+      - OPTIONS
+      maxAge: 24h
+    headers:
+      request:
+        remove:
+        - authorization
+    match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: {{ include "open-webui.name" . }}
+        port:
+          number: {{ .Values.service.port }}
