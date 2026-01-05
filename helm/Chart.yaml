@@ -1,8 +1,8 @@
 apiVersion: v2
 name: open-webui
-version: 1.0.8
+version: 1.0.9
 originalVersion: 5.19.0
-appVersion: 0.6.42
+appVersion: 0.5.16
 home: https://www.openwebui.com/
 icon: >-
   https://raw.githubusercontent.com/open-webui/open-webui/main/static/favicon.png
