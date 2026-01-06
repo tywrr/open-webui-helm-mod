@@ -116,8 +116,8 @@ replicaCount: 1
 strategy: {}
 # -- Open WebUI image tags can be found here: https://github.com/open-webui/open-webui
 image:
-  repository: gcr.io/devsentient-infra/custom/custom/open-webui
-  tag: ""
+  repository: ghcr.io/tywrr/open-webui
+  tag: "latest"
   pullPolicy: "IfNotPresent"
 
 serviceAccount:
