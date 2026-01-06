@@ -4,8 +4,57 @@ entries:
   - annotations:
       licenses: MIT
     apiVersion: v2
+    appVersion: 0.6.43
+    created: "2026-01-05T16:11:26.742271-08:00"
+    dependencies:
+    - condition: ollama.enabled
+      import-values:
+      - child: service
+        parent: ollama.service
+      name: ollama
+      repository: https://otwld.github.io/ollama-helm/
+      version: '>=0.24.0'
+    - condition: pipelines.enabled
+      import-values:
+      - child: service
+        parent: pipelines.service
+      name: pipelines
+      repository: https://helm.openwebui.com
+      version: '>=0.0.1'
+    - condition: tika.enabled
+      name: tika
+      repository: https://apache.jfrog.io/artifactory/tika
+      version: '>=2.9.0'
+    - alias: redis-cluster
+      condition: redis-cluster.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: '>=20.6.2'
+    description: "Open WebUI: A User-Friendly Web Interface for Chat Interactions
+      \U0001F44B"
+    digest: a0a5edf12d2bd5e9b91de1720cfb555a320d967f1b8ac7b603c440bda81d64b6
+    home: https://www.openwebui.com/
+    icon: https://raw.githubusercontent.com/open-webui/open-webui/main/static/favicon.png
+    keywords:
+    - llm
+    - chat
+    - web-ui
+    - open-webui
+    name: open-webui
+    sources:
+    - https://github.com/open-webui/helm-charts
+    - https://github.com/open-webui/open-webui/pkgs/container/open-webui
+    - https://github.com/otwld/ollama-helm/
+    - https://hub.docker.com/r/ollama/ollama
+    - https://charts.bitnami.com/bitnami
+    urls:
+    - https://tywrr.github.io/open-webui-helm-mod/open-webui-1.0.11.tgz
+    version: 1.0.11
+  - annotations:
+      licenses: MIT
+    apiVersion: v2
     appVersion: 0.5.16
-    created: "2026-01-05T15:46:09.033542-08:00"
+    created: "2026-01-05T16:11:26.73582-08:00"
     dependencies:
     - condition: ollama.enabled
       import-values:
@@ -54,7 +103,7 @@ entries:
       licenses: MIT
     apiVersion: v2
     appVersion: 0.5.16
-    created: "2026-01-05T15:46:09.052658-08:00"
+    created: "2026-01-05T16:11:26.7612-08:00"
     dependencies:
     - condition: ollama.enabled
       import-values:
@@ -103,7 +152,7 @@ entries:
       licenses: MIT
     apiVersion: v2
     appVersion: 0.6.42
-    created: "2026-01-05T15:46:09.046738-08:00"
+    created: "2026-01-05T16:11:26.754307-08:00"
     dependencies:
     - condition: ollama.enabled
       import-values:
@@ -152,7 +201,7 @@ entries:
       licenses: MIT
     apiVersion: v2
     appVersion: 0.5.16
-    created: "2026-01-05T15:46:09.04031-08:00"
+    created: "2026-01-05T16:11:26.748263-08:00"
     dependencies:
     - condition: ollama.enabled
       import-values:
@@ -197,4 +246,4 @@ entries:
     urls:
     - https://tywrr.github.io/open-webui-helm-mod/open-webui-1.0.7.tgz
     version: 1.0.7
-generated: "2026-01-05T15:46:09.026664-08:00"
+generated: "2026-01-05T16:11:26.728554-08:00"
